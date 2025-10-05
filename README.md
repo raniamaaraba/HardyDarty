@@ -15,6 +15,7 @@ Intro to git:
 -C/C++ (by Microsoft)
 -C/C++ Clang Command Adapter (by Yasuaki MITANI)
 -C/C++ Extension Pack (by Microsoft)
+-PlatformIO( by PlatformIO IDE)
 -clangd (by LLVM)
   These should be all the libraries required, if it prompts you to download a separate one please do so and lmk the name to add to this list!
 
@@ -34,6 +35,11 @@ git commit -m "Add new feature"
 git push -u origin new-feature
 git checkout -b new-branch-name
 git switch branch-name
+
+PlatformIO:
+if you do not see the side bar alien then do the following command:
+cmd/crtl shift p
+platformio: home
 
 PLEASE ENSURE YOU ARE PUSHING TO THE CORRECT LOCATION AND NOT OVERRIDING BASE SOURCE CODE!!!
 
