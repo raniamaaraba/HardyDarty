@@ -41,6 +41,8 @@ if you do not see the side bar alien then do the following command:
 cmd/crtl shift p
 platformio: home
 
+BEWARE OF ISSUES WITH CLANG
+
 PLEASE ENSURE YOU ARE PUSHING TO THE CORRECT LOCATION AND NOT OVERRIDING BASE SOURCE CODE!!!
 
 
