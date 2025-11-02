@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
-#include <MS5611.h>
+#include <MS5611_SPI.h>
 
 // LSM6DSO32 sensor
 // For SPI mode, we need a CS pin
@@ -10,10 +10,10 @@
 Adafruit_LSM6DSO32 dso32;
 
 // Define SPI CS pin for Barometer
-//MS5611_SPI MS5611(43); // Init hardware SPI
+MS5611_SPI MS5611(43); // Init hardware SPI
 
 // Set I2C adress for barometer 
-MS5611 MS5611(0x76);
+//MS5611 MS5611(0x76);
 
 void setup(void) {
   Serial.begin(115200);
@@ -146,7 +146,7 @@ void setup(void) {
   }
 
   // Setup for barometer
-  //SPI.begin();
+  SPI.begin();
 
   if (MS5611.begin() == true){
     Serial.println("MS5611 found.");
@@ -238,7 +238,8 @@ void loop() {
 
     Serial.print("Temp");
     Serial.print(MS5611.getTemperature(),2);
-    Serial.println();
+    Serial.print("read:");
+    Serial.println(MS5611.read());
 
     delayMicroseconds(10000);
     }
