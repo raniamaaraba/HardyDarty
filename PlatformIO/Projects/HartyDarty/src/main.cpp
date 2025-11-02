@@ -1,52 +1,33 @@
+// Sensor Test - Serial Output 
+
 #include <Arduino.h>
-#include <Adafruit_LSM6DSO32.h>
-// put function declarations here:
-int myFunction(int, int);
-
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
-}
-
-
-
-
-
-// Basic demo for accelerometer & gyro readings from Adafruit
 // LSM6DSO32 sensor
 #include <Adafruit_LSM6DSO32.h>
+// MS5611 Barometric Pressure Sensor
+#include "MS5611.h"
 // For SPI mode, we need a CS pin
-#define LSM_CS 10
-// For software-SPI mode we need SCK/MOSI/MISO pins
-#define LSM_SCK 13
-#define LSM_MISO 12
-#define LSM_MOSI 11
+#define LSM_CS 44
 
 Adafruit_LSM6DSO32 dso32;
+
+// Define SPI CS pin for Barometer
+//MS5611_SPI MS5611(43); // Init hardware SPI
+
+// Set I2C adress for barometer 
+MS5611 MS5611(0x76);
+
 void setup(void) {
   Serial.begin(115200);
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
   Serial.println("Adafruit LSM6DSO32 test!");
-
-  if (!dso32.begin_I2C()) {
-    // if (!dso32.begin_SPI(LSM_CS)) {
-    // if (!dso32.begin_SPI(LSM_CS, LSM_SCK, LSM_MISO, LSM_MOSI)) {
-    // Serial.println("Failed to find LSM6DSO32 chip");
-    while (1) {
-      delay(10);
-    }
+  // Setup SPI for accelerometer
+  while (!dso32.begin_SPI(LSM_CS)) { // Init hardware SPI
+    Serial.println("Failed to find LSM6DSO32 chip");
+    delay(100);
   }
+
 
   Serial.println("LSM6DSO32 Found!");
 
@@ -65,7 +46,7 @@ void setup(void) {
   case LSM6DSO32_ACCEL_RANGE_32_G:
     Serial.println("+-32G");
     break;
-  }
+  } 
 
   // dso32.setGyroRange(LSM6DS_GYRO_RANGE_250_DPS );
   Serial.print("Gyro range set to: ");
@@ -164,54 +145,102 @@ void setup(void) {
     Serial.println("6.66 KHz");
     break;
   }
+
+  // Setup for barometer
+  SPI.begin();
+
+  if (MS5611.begin() == true){
+    Serial.println("MS5611 found.");
+  } else{
+    Serial.println("MS5611 not found. halt.");
+    while (1);
+  }
+  Serial.println();
+
+  MS5611.setOversampling(OSR_ULTRA_HIGH);
+  //MS5611.setTemperatureOffset(273.15);
 }
 
 void loop() {
+  // plot integer determines serial output type
+  // 0 = Text output, easier to read directly from serial monitor
+  // 1 = Serial Plotter optimized output, works w/ Serial Plotter extension
+  int plot = 1; 
+  if (plot==0) {
+    //  /* Get a new normalized sensor event */
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    dso32.getEvent(&accel, &gyro, &temp);
 
-  //  /* Get a new normalized sensor event */
-  sensors_event_t accel;
-  sensors_event_t gyro;
-  sensors_event_t temp;
-  dso32.getEvent(&accel, &gyro, &temp);
+    Serial.print("\t\tTemperature ");
+    Serial.print(temp.temperature);
+    Serial.println(" deg C");
 
-  Serial.print("\t\tTemperature ");
-  Serial.print(temp.temperature);
-  Serial.println(" deg C");
+    /* Display the results (acceleration is measured in m/s^2) */
+    Serial.print("\t\tAccel X: ");
+    Serial.print(accel.acceleration.x);
+    Serial.print(" \tY: ");
+    Serial.print(accel.acceleration.y);
+    Serial.print(" \tZ: ");
+    Serial.print(accel.acceleration.z);
+    Serial.println(" m/s^2 ");
 
-  /* Display the results (acceleration is measured in m/s^2) */
-  Serial.print("\t\tAccel X: ");
-  Serial.print(accel.acceleration.x);
-  Serial.print(" \tY: ");
-  Serial.print(accel.acceleration.y);
-  Serial.print(" \tZ: ");
-  Serial.print(accel.acceleration.z);
-  Serial.println(" m/s^2 ");
+    /* Display the results (rotation is measured in rad/s) */
+    Serial.print("\t\tGyro X: ");
+    Serial.print(gyro.gyro.x);
+    Serial.print(" \tY: ");
+    Serial.print(gyro.gyro.y);
+    Serial.print(" \tZ: ");
+    Serial.print(gyro.gyro.z);
+    Serial.println(" radians/s ");
+    Serial.println();
+  } else if (plot==1) {
+    // serial plotter friendly format - Works w/ VS Code extension Serial Plotter
+    // Hit Control(cmd)+Shift+P and type: "Serial Plotter: Open pane" into window and hit enter to open plotter
 
-  /* Display the results (rotation is measured in rad/s) */
-  Serial.print("\t\tGyro X: ");
-  Serial.print(gyro.gyro.x);
-  Serial.print(" \tY: ");
-  Serial.print(gyro.gyro.y);
-  Serial.print(" \tZ: ");
-  Serial.print(gyro.gyro.z);
-  Serial.println(" radians/s ");
-  Serial.println();
+    /* Get a new normalized sensor event */
+    sensors_event_t accel;
+    sensors_event_t gyro;
+    sensors_event_t temp;
+    dso32.getEvent(&accel, &gyro, &temp);
 
-  delay(100);
+    Serial.print('>');
+    
+    Serial.print("Ax:");
+    Serial.print(accel.acceleration.x);
+    Serial.print(',');
 
-  //  // serial plotter friendly format
+    Serial.print("Ay:");
+    Serial.print(accel.acceleration.y);
+    Serial.print(',');
 
-  //  Serial.print(temp.temperature);
-  //  Serial.print(",");
+    Serial.print("Az:");
+    Serial.print(accel.acceleration.z);
+    Serial.print(',');
 
-  //  Serial.print(accel.acceleration.x);
-  //  Serial.print(","); Serial.print(accel.acceleration.y);
-  //  Serial.print(","); Serial.print(accel.acceleration.z);
-  //  Serial.print(",");
+    Serial.print("Gx:");
+    Serial.print(gyro.gyro.x);
+    Serial.print(',');
 
-  // Serial.print(gyro.gyro.x);
-  // Serial.print(","); Serial.print(gyro.gyro.y);
-  // Serial.print(","); Serial.print(gyro.gyro.z);
-  // Serial.println();
-  //  delayMicroseconds(10000);
+    Serial.print("Gy:");
+    Serial.print(gyro.gyro.y);
+    Serial.print(',');
+
+    Serial.print("Gz:");
+    Serial.print(gyro.gyro.z);
+    Serial.print(',');
+
+    MS5611.read();
+
+    Serial.print("Pressure:");
+    Serial.print(MS5611.getPressure(),2);
+    Serial.print(',');
+
+    Serial.print("Temp");
+    Serial.print(MS5611.getTemperature(),2);
+    Serial.println();
+
+    delayMicroseconds(10000);
+    }
 }
