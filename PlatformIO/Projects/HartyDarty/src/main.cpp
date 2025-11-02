@@ -1,13 +1,39 @@
-// Sensor Test - Serial Output 
-
 #include <Arduino.h>
+#include <Adafruit_LSM6DSO32.h>
+// put function declarations here:
+int myFunction(int, int);
+
+void setup() {
+  // put your setup code here, to run once:
+  int result = myFunction(2, 3);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+}
+
+// put function definitions here:
+int myFunction(int x, int y) {
+  return x + y;
+}
+
+
+
+
+
+// Basic demo for accelerometer & gyro readings from Adafruit
 // LSM6DSO32 sensor
 #include <Adafruit_LSM6DSO32.h>
-// MS5611 Barometric Pressure Sensor
-#include "MS5611.h"
 // For SPI mode, we need a CS pin
-#define LSM_CS 44
+#define LSM_CS 10
+// For software-SPI mode we need SCK/MOSI/MISO pins
+#define LSM_SCK 13
+#define LSM_MISO 12
+#define LSM_MOSI 11
 
+//look at programing state diagram based on states
+
+//check that all components are up and running
 Adafruit_LSM6DSO32 dso32;
 
 // Define SPI CS pin for Barometer
@@ -46,7 +72,7 @@ void setup(void) {
   case LSM6DSO32_ACCEL_RANGE_32_G:
     Serial.println("+-32G");
     break;
-  } 
+  }
 
   // dso32.setGyroRange(LSM6DS_GYRO_RANGE_250_DPS );
   Serial.print("Gyro range set to: ");
