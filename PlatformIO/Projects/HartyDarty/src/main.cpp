@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
-#include <MS5611_SPI.h>
+#include <MS5611.h>
 
 // LSM6DSO32 sensor
 // For SPI mode, we need a CS pin
@@ -10,10 +10,10 @@
 Adafruit_LSM6DSO32 dso32;
 
 // Define SPI CS pin for Barometer
-MS5611_SPI MS5611(43); // Init hardware SPI
+// MS5611_SPI MS5611(43); // Init hardware SPI
 
 // Set I2C adress for barometer 
-//MS5611 MS5611(0x76);
+MS5611 MS5611(0x77); 
 
 void setup(void) {
   Serial.begin(115200);
@@ -22,7 +22,7 @@ void setup(void) {
 
   Serial.println("Adafruit LSM6DSO32 test!");
   // Setup SPI for accelerometer
-  while (!dso32.begin_SPI(LSM_CS)) { // Init hardware SPI
+  while (!dso32.begin_I2C()) { // Init hardware SPI
     Serial.println("Failed to find LSM6DSO32 chip");
     delay(100);
   }
@@ -146,8 +146,8 @@ void setup(void) {
   }
 
   // Setup for barometer
-  SPI.begin();
 
+  Wire.begin();
   if (MS5611.begin() == true){
     Serial.println("MS5611 found.");
   } else{
@@ -233,13 +233,11 @@ void loop() {
     MS5611.read();
 
     Serial.print("Pressure:");
-    Serial.print(MS5611.getPressure(),2);
+    Serial.print(MS5611.getPressure(),2); // Pressure is in mBar so values near 999 are close to sea level atmospheric pressure
     Serial.print(',');
 
-    Serial.print("Temp");
-    Serial.print(MS5611.getTemperature(),2);
-    Serial.print("read:");
-    Serial.println(MS5611.read());
+    Serial.print("Temp:");
+    Serial.println(MS5611.getTemperature(),2);
 
     delayMicroseconds(10000);
     }
