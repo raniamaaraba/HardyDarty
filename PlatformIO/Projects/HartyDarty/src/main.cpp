@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
+#include <test_functions.h>
 
 // LSM6DSO32 sensor
 // For SPI mode, we need a CS pin
@@ -161,84 +162,5 @@ void setup(void) {
 }
 
 void loop() {
-  // plot integer determines serial output type
-  // 0 = Text output, easier to read directly from serial monitor
-  // 1 = Serial Plotter optimized output, works w/ Serial Plotter extension
-  int plot = 1; 
-  if (plot==0) {
-    //  /* Get a new normalized sensor event */
-    sensors_event_t accel;
-    sensors_event_t gyro;
-    sensors_event_t temp;
-    dso32.getEvent(&accel, &gyro, &temp);
-
-    Serial.print("\t\tTemperature ");
-    Serial.print(temp.temperature);
-    Serial.println(" deg C");
-
-    /* Display the results (acceleration is measured in m/s^2) */
-    Serial.print("\t\tAccel X: ");
-    Serial.print(accel.acceleration.x);
-    Serial.print(" \tY: ");
-    Serial.print(accel.acceleration.y);
-    Serial.print(" \tZ: ");
-    Serial.print(accel.acceleration.z);
-    Serial.println(" m/s^2 ");
-
-    /* Display the results (rotation is measured in rad/s) */
-    Serial.print("\t\tGyro X: ");
-    Serial.print(gyro.gyro.x);
-    Serial.print(" \tY: ");
-    Serial.print(gyro.gyro.y);
-    Serial.print(" \tZ: ");
-    Serial.print(gyro.gyro.z);
-    Serial.println(" radians/s ");
-    Serial.println();
-  } else if (plot==1) {
-    // serial plotter friendly format - Works w/ VS Code extension Serial Plotter
-    // Hit Control(cmd)+Shift+P and type: "Serial Plotter: Open pane" into window and hit enter to open plotter
-
-    /* Get a new normalized sensor event */
-    sensors_event_t accel;
-    sensors_event_t gyro;
-    sensors_event_t temp;
-    dso32.getEvent(&accel, &gyro, &temp);
-
-    Serial.print('>');
-    
-    Serial.print("Ax:");
-    Serial.print(accel.acceleration.x);
-    Serial.print(',');
-
-    Serial.print("Ay:");
-    Serial.print(accel.acceleration.y);
-    Serial.print(',');
-
-    Serial.print("Az:");
-    Serial.print(accel.acceleration.z);
-    Serial.print(',');
-
-    Serial.print("Gx:");
-    Serial.print(gyro.gyro.x);
-    Serial.print(',');
-
-    Serial.print("Gy:");
-    Serial.print(gyro.gyro.y);
-    Serial.print(',');
-
-    Serial.print("Gz:");
-    Serial.print(gyro.gyro.z);
-    Serial.print(',');
-
-    MS5611.read();
-
-    Serial.print("Pressure:");
-    Serial.print(MS5611.getPressure(),2); // Pressure is in mBar so values near 999 are close to sea level atmospheric pressure
-    Serial.print(',');
-
-    Serial.print("Temp:");
-    Serial.println(MS5611.getTemperature(),2);
-
-    delayMicroseconds(10000);
-    }
+  data_print_test(dso32,MS5611,1);
 }
