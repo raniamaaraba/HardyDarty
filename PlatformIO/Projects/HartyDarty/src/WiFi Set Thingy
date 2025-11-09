@@ -1,0 +1,32 @@
+#include <WiFi.h>
+
+const char* ssid = "JD WiFi Test";   // WiFi name
+const char* password = "123456789";       // WiFi password
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Starting Access Point...");
+
+  // Start WiFi in AP mode
+  WiFi.mode(WIFI_AP);
+  bool result = WiFi.softAP(ssid, password);
+
+  if (result) {
+    Serial.println("Access Point started successfully!");
+    Serial.print("SSID: ");
+    Serial.println(ssid);
+    Serial.print("Password: ");
+    Serial.println(password);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("Failed to start Access Point!");
+  }
+}
+
+void loop() {
+  // Optional: monitor connected clients
+  Serial.print("Number of connected clients: ");
+  Serial.println(WiFi.softAPgetStationNum());
+  delay(2000);
+} 
