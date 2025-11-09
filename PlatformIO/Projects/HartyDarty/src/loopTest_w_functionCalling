@@ -1,0 +1,33 @@
+#include <Arduino.h>
+
+float frame_start = 0;
+float loop_time = 20; //This is in milliseconds
+
+void timeUpdate() {
+    float frame_time = millis() - frame_start;
+    float delay_time = loop_time - frame_time;
+
+    if (delay_time > 0) {
+        delay((unsigned long)delay_time);
+    }
+
+    frame_start = millis();
+}
+
+
+void setup(void) {
+  Serial.begin(115200);
+  
+  //Do setup stuff
+  frame_start = millis();
+}
+
+void exampleFunction() {
+    Serial.print("Ima touch you ");
+}
+
+void loop() {
+  exampleFunction();
+
+  timeUpdate();
+}
