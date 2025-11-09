@@ -16,6 +16,15 @@ Adafruit_LSM6DSO32 dso32;
 // Set I2C adress for barometer 
 MS5611 MS5611(0x77); 
 
+// Define pins for continuity testing
+// Ig for ignition wires and cont for continuity wires
+#define ig1 1
+#define cont1 2
+#define ig2 3
+#define cont2 4
+#define ig3 9
+#define cont3 8
+
 void setup(void) {
   Serial.begin(115200);
   while (!Serial)
@@ -27,6 +36,25 @@ void setup(void) {
     Serial.println("Failed to find LSM6DSO32 chip");
     delay(100);
   }
+
+  // Setup PinModes for continuity testing
+  // Setting low for continuity testing
+  // Mostfet 1
+  analogSetPinAttenuation(cont1,ADC_11db);
+  pinMode(ig1,OUTPUT);
+  pinMode(cont1,INPUT);
+  digitalWrite(ig1,LOW); // Sets mosfet, LOW means off, HIGH means on
+  float ADC = 0;
+  // Mostfet 2
+  analogSetPinAttenuation(cont2,ADC_11db);
+  pinMode(ig2,OUTPUT);
+  pinMode(cont2,INPUT);
+  digitalWrite(ig2,LOW); // Sets mosfet, LOW means off, HIGH means on
+  // Mosfet 3
+  analogSetPinAttenuation(cont3,ADC_11db);
+  pinMode(ig3,OUTPUT);
+  pinMode(cont3,INPUT);
+  digitalWrite(ig3,LOW); // Sets mosfet, LOW means off, HIGH means on
 
 
   Serial.println("LSM6DSO32 Found!");
@@ -162,5 +190,10 @@ void setup(void) {
 }
 
 void loop() {
-  data_print_test(dso32,MS5611,1);
+  //data_print_test(dso32,MS5611,1);
+
+  // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
+  int ig[3]={ig1,ig2,ig3};
+  int cont[3]={cont1,cont2,cont3};
+  continuity_test(0,ig,cont);
 }
