@@ -293,15 +293,7 @@ void setup(void) {
   // Serial.println("File Testing Completed!\n");
 
   // Create file 
-  bool exists = LittleFS.exists("/data.txt");
-  // If file exists, don't duplicate it
-  if (!exists){
-    Serial.println("File not creaed");
-    writeFile(LittleFS,"/data.txt","Test Data");
-  } else {
-    Serial.println("File already created");
-  }
-
+  writeFile(LittleFS,"/data.txt","Test Data:");
 }
 
 void loop() {
