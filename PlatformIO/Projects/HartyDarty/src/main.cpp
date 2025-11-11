@@ -313,7 +313,6 @@ void loop() {
   continuity_test(0,ig,cont);
 
 
-  server.begin();
   WiFiClient client = server.available();
   if (client) {
     Serial.println("New Client.");
@@ -323,9 +322,29 @@ void loop() {
         char c = client.read();
         Serial.write(c);
         if (c == '\n') {
-          //this is where you modify the website
+          // Handle file download
+          if (currentLine.startsWith("GET /data.txt")) {
+            File file = LittleFS.open("/data.txt", "r");
+            if (file) {
+              client.println("HTTP/1.1 200 OK");
+              client.println("Content-Type: text/plain");
+              client.println("Content-Disposition: attachment; filename=\"data.txt\"");
+              client.println();
+              while (file.available()) {
+                client.write(file.read());
+              }
+              file.close();
+            } else {
+              client.println("HTTP/1.1 404 Not Found");
+              client.println("Content-Type: text/plain");
+              client.println();
+              client.println("File not found");
+            }
+            break;
+          }
+
+          // Serve HTML page
           if (currentLine.length() == 0) {
-            // Send HTML response
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
@@ -344,13 +363,13 @@ void loop() {
           currentLine += c;
         }
 
-        // Handle LED control
+        // LED control
         if (currentLine.endsWith("GET /H")) {
-          digitalWrite(LED_BUILTIN, LOW); // ON
+          digitalWrite(LED_BUILTIN, LOW);
           Serial.println("LED turned ON");
         }
         if (currentLine.endsWith("GET /L")) {
-          digitalWrite(LED_BUILTIN, HIGH); // OFF
+          digitalWrite(LED_BUILTIN, HIGH);
           Serial.println("LED turned OFF");
         }
       }
@@ -358,5 +377,4 @@ void loop() {
     client.stop();
     Serial.println("Client Disconnected.");
   }
-
 }
