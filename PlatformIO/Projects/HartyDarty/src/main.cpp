@@ -258,6 +258,8 @@ void setup(void) {
   by Elochukwu Ifediora (fedy0)
   */
 
+
+
   //#define LED_BUILTIN 2   // Set the GPIO pin where you connected your test LED or comment this line out if your dev board has a built-in LED
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
@@ -290,6 +292,17 @@ void setup(void) {
   testFileIO(LittleFS, "/test.txt"); //Testin
   deleteFile(LittleFS, "/test.txt"); //Delete the file
   Serial.println("File Testing Completed!\n");
+
+  // Create file 
+  bool exists = LittleFS.exists("/test.txt");
+  // If file exists, don't duplicate it
+  if (!exists){
+    Serial.println("File not creaed");
+    writeFile(LittleFS,"/data.txt","Test Data");
+  } else {
+    Serial.println("File already created");
+  }
+
 }
 
 void loop() {
@@ -301,6 +314,7 @@ void loop() {
   continuity_test(0,ig,cont);
 
 
+
   WiFiClient client = server.available();
   if (client) {
     Serial.println("New Client.");
@@ -309,7 +323,6 @@ void loop() {
       if (client.available()) {
         char c = client.read();
         Serial.write(c);
-
         if (c == '\n') {
           //this is where you modify the website
           if (currentLine.length() == 0) {
@@ -321,6 +334,7 @@ void loop() {
             client.println("<h2>ESP32 Local Control</h2>");
             client.println("<a href=\"/H\">Turn ON LED</a><br>");
             client.println("<a href=\"/L\">Turn OFF LED</a><br>");
+            //client.println("<a href=\"data.txt\" download>");
             client.println("</body></html>");
             client.println();
             break;
@@ -346,14 +360,4 @@ void loop() {
     Serial.println("Client Disconnected.");
   }
 
-  // Create file 
-  bool exists = LittleFS.exists("/test.txt");
-  // If file exists, don't duplicate it
-  if (!exists){
-    Serial.println("File not creaed");
-    writeFile(LittleFS,"/text.txt","Test Data");
-  } else {
-    Serial.println("File already created");
-  }
-  
 }
