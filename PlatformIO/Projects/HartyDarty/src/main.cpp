@@ -289,9 +289,8 @@ void setup(void) {
   deleteFile(LittleFS, "/foo.txt"); //Delete the file
   testFileIO(LittleFS, "/test.txt"); //Testin
   deleteFile(LittleFS, "/test.txt"); //Delete the file
-  Serial.println("File Testing Completed!");
+  Serial.println("File Testing Completed!\n");
 }
-      
 
 void loop() {
   //data_print_test(dso32,MS5611,1);
@@ -345,6 +344,16 @@ void loop() {
     }
     client.stop();
     Serial.println("Client Disconnected.");
+  }
+
+  // Create file 
+  bool exists = LittleFS.exists("/test.txt");
+  // If file exists, don't duplicate it
+  if (!exists){
+    Serial.println("File not creaed");
+    writeFile(LittleFS,"/text.txt","Test Data");
+  } else {
+    Serial.println("File already created");
   }
   
 }
