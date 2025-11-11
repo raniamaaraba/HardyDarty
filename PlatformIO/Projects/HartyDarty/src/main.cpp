@@ -20,6 +20,16 @@ const char *password = "password";
 
 WiFiServer server(80);
 
+//delays for file writing
+unsigned long startTime = 0;
+unsigned long lastWriteTime = 0;
+const unsigned long writeInterval = 20000; // 20 seconds
+const unsigned long runDuration = 120000;  // 2 minutes
+bool loggingActive = true;
+bool startTimeLogged = false;
+
+
+
 //check that all components are up and running
 Adafruit_LSM6DSO32 dso32;
 
@@ -208,6 +218,8 @@ void testFileIO(fs::FS &fs, const char * path){
 }
 
 void setup(void) {
+  startTime = millis();
+
   Serial.begin(115200);
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -274,26 +286,8 @@ void setup(void) {
   server.begin();
   Serial.println("Server started");
 
-  // // Test File System
-  // Serial.println("\nFile System Test:");
-  // createDir(LittleFS, "/mydir"); // Create a mydir folder
-  // writeFile(LittleFS, "/mydir/hello1.txt", "Hello1"); // Create a hello1.txt file with the content "Hello1"
-  // listDir(LittleFS, "/", 1); // List the directories up to one level beginning at the root directory
-  // deleteFile(LittleFS, "/mydir/hello1.txt"); //delete the previously created file
-  // removeDir(LittleFS, "/mydir"); //delete the previously created folder
-  // listDir(LittleFS, "/", 1); // list all directories to make sure they were deleted
-  // writeFile(LittleFS, "/hello.txt", "Hello "); //Create and write a new file in the root directory
-  // appendFile(LittleFS, "/hello.txt", "World!\r\n"); //Append some text to the previous file
-  // readFile(LittleFS, "/hello.txt"); // Read the complete file
-  // renameFile(LittleFS, "/hello.txt", "/foo.txt"); //Rename the previous file
-  // readFile(LittleFS, "/foo.txt"); //Read the file with the new name
-  // deleteFile(LittleFS, "/foo.txt"); //Delete the file
-  // testFileIO(LittleFS, "/test.txt"); //Testin
-  // deleteFile(LittleFS, "/test.txt"); //Delete the file
-  // Serial.println("File Testing Completed!\n");
-
   // Create file 
-  writeFile(LittleFS,"/data.txt","Test Data:");
+  writeFile(LittleFS,"/data.txt","");
 }
 
 void loop() {
@@ -305,6 +299,50 @@ void loop() {
   continuity_test(0,ig,cont);
 
 
+  unsigned long currentTime = millis();
+
+  // Stop logging after 2 minutes
+  if (loggingActive && (currentTime - startTime >= runDuration)) {
+    loggingActive = false;
+    Serial.println("Logging complete after 2 minutes.");
+  }
+
+  // Log start time once
+  if (loggingActive && !startTimeLogged) {
+    File file = LittleFS.open("/data.txt", "w");  // overwrite any previous content
+    if (file) {
+      time_t now = time(nullptr);  // optional: if RTC or NTP is available
+      file.print("Logging started at millis: ");
+      file.println(startTime);
+      file.close();
+      startTimeLogged = true;
+      Serial.println("Start time logged.");
+    }
+  }
+
+  // Log sensor data every 20 seconds
+  if (loggingActive && (currentTime - lastWriteTime >= writeInterval)) {
+    lastWriteTime = currentTime;
+
+    float temp = MS5611.getTemperature();
+    float pressure = MS5611.getPressure();
+    //edit this section in the future when we are ACTUALLY logging data
+
+
+    //
+    File file = LittleFS.open("/data.txt", "a");  // append mode
+    if (file) {
+      file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);  // each entry on its own line with f
+      file.close();
+      Serial.println("Logged sensor data.");
+    } else {
+      Serial.println("Failed to open /data.txt");
+    }
+  }
+
+
+
+
   WiFiClient client = server.available();
   if (client) {
     Serial.println("New Client.");
@@ -314,7 +352,7 @@ void loop() {
         char c = client.read();
         Serial.write(c);
         if (c == '\n') {
-          // Handle file download
+          //file download for html
           if (currentLine.startsWith("GET /data.txt")) {
             File file = LittleFS.open("/data.txt", "r");
             if (file) {
@@ -335,7 +373,7 @@ void loop() {
             break;
           }
 
-          // Serve HTML page
+          //html edit page
           if (currentLine.length() == 0) {
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
@@ -355,7 +393,7 @@ void loop() {
           currentLine += c;
         }
 
-        // LED control
+        //testing with LEDs
         if (currentLine.endsWith("GET /H")) {
           digitalWrite(LED_BUILTIN, LOW);
           Serial.println("LED turned ON");
