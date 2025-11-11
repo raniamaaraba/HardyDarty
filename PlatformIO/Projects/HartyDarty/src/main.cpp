@@ -241,7 +241,6 @@ void setup(void) {
   digitalWrite(ig3,LOW); // Sets mosfet, LOW means off, HIGH means on
 
   // WiFi Setup -----------------
-  WiFiServer server(80);
 
   //get call for wifi setup
   //hostname: esp32s3-000000
@@ -262,7 +261,7 @@ void setup(void) {
 
   //#define LED_BUILTIN 2   // Set the GPIO pin where you connected your test LED or comment this line out if your dev board has a built-in LED
   pinMode(LED_BUILTIN, OUTPUT);
-  Serial.begin(115200);
+  //Serial.begin(115200);
   Serial.println();
 
   // Start Access Point (local-only WiFi)
@@ -275,26 +274,26 @@ void setup(void) {
   server.begin();
   Serial.println("Server started");
 
-  // Test File System
-  Serial.println("\nFile System Test:");
-  createDir(LittleFS, "/mydir"); // Create a mydir folder
-  writeFile(LittleFS, "/mydir/hello1.txt", "Hello1"); // Create a hello1.txt file with the content "Hello1"
-  listDir(LittleFS, "/", 1); // List the directories up to one level beginning at the root directory
-  deleteFile(LittleFS, "/mydir/hello1.txt"); //delete the previously created file
-  removeDir(LittleFS, "/mydir"); //delete the previously created folder
-  listDir(LittleFS, "/", 1); // list all directories to make sure they were deleted
-  writeFile(LittleFS, "/hello.txt", "Hello "); //Create and write a new file in the root directory
-  appendFile(LittleFS, "/hello.txt", "World!\r\n"); //Append some text to the previous file
-  readFile(LittleFS, "/hello.txt"); // Read the complete file
-  renameFile(LittleFS, "/hello.txt", "/foo.txt"); //Rename the previous file
-  readFile(LittleFS, "/foo.txt"); //Read the file with the new name
-  deleteFile(LittleFS, "/foo.txt"); //Delete the file
-  testFileIO(LittleFS, "/test.txt"); //Testin
-  deleteFile(LittleFS, "/test.txt"); //Delete the file
-  Serial.println("File Testing Completed!\n");
+  // // Test File System
+  // Serial.println("\nFile System Test:");
+  // createDir(LittleFS, "/mydir"); // Create a mydir folder
+  // writeFile(LittleFS, "/mydir/hello1.txt", "Hello1"); // Create a hello1.txt file with the content "Hello1"
+  // listDir(LittleFS, "/", 1); // List the directories up to one level beginning at the root directory
+  // deleteFile(LittleFS, "/mydir/hello1.txt"); //delete the previously created file
+  // removeDir(LittleFS, "/mydir"); //delete the previously created folder
+  // listDir(LittleFS, "/", 1); // list all directories to make sure they were deleted
+  // writeFile(LittleFS, "/hello.txt", "Hello "); //Create and write a new file in the root directory
+  // appendFile(LittleFS, "/hello.txt", "World!\r\n"); //Append some text to the previous file
+  // readFile(LittleFS, "/hello.txt"); // Read the complete file
+  // renameFile(LittleFS, "/hello.txt", "/foo.txt"); //Rename the previous file
+  // readFile(LittleFS, "/foo.txt"); //Read the file with the new name
+  // deleteFile(LittleFS, "/foo.txt"); //Delete the file
+  // testFileIO(LittleFS, "/test.txt"); //Testin
+  // deleteFile(LittleFS, "/test.txt"); //Delete the file
+  // Serial.println("File Testing Completed!\n");
 
   // Create file 
-  bool exists = LittleFS.exists("/test.txt");
+  bool exists = LittleFS.exists("/data.txt");
   // If file exists, don't duplicate it
   if (!exists){
     Serial.println("File not creaed");
@@ -314,7 +313,7 @@ void loop() {
   continuity_test(0,ig,cont);
 
 
-
+  server.begin();
   WiFiClient client = server.available();
   if (client) {
     Serial.println("New Client.");
@@ -334,7 +333,7 @@ void loop() {
             client.println("<h2>ESP32 Local Control</h2>");
             client.println("<a href=\"/H\">Turn ON LED</a><br>");
             client.println("<a href=\"/L\">Turn OFF LED</a><br>");
-            //client.println("<a href=\"data.txt\" download>");
+            client.println("<a href=\"/data.txt\" download>Download File</a><br>");
             client.println("</body></html>");
             client.println();
             break;
