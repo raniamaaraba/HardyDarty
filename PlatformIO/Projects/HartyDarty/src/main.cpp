@@ -2,6 +2,7 @@
 #include <Adafruit_LSM6DSO32.h>
 #include <MS5611.h>
 #include <test_functions.h>
+
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiClient.h>
@@ -12,7 +13,6 @@
 
 // Formats file system if not already formatted
 #define FORMAT_LITTLEFS_IF_FAILED true
-
 
 // Set these to your desired credentials.
 const char *ssid = "XIAO_ESP32S3";
@@ -28,26 +28,23 @@ const unsigned long runDuration = 120000;  // 2 minutes
 bool loggingActive = true;
 bool startTimeLogged = false;
 
-
-
 //check that all components are up and running
 Adafruit_LSM6DSO32 dso32;
 
-// Set I2C adress for barometer 
+// Set I2C adress for barometer - Ignore any error here relating to "not a class name"
 MS5611 MS5611(0x77);
 
 // Define pins for continuity testing
 // Ig for ignition wires and cont for continuity wires
-#define ig1 1
-#define cont1 2
-#define ig2 3
-#define cont2 4
+// NOTE! Reflects ports on final flight computer, not breadboard computer!
+#define ig1 2
+#define cont1 1
+#define ig2 4
+#define cont2 3
 #define ig3 9
 #define cont3 8
 
-// LittleFS functions - Will be moved out of main later!
-#define FORMAT_LITTLEFS_IF_FAILED true
-
+// Functions for using the LittleFS file system - Will be moved out of main later! 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
     Serial.printf("Listing directory: %s\r\n", dirname);
 
@@ -221,8 +218,8 @@ void setup(void) {
   startTime = millis();
 
   Serial.begin(115200);
-  while (!Serial)
-    delay(10); // will pause Zero, Leonardo, etc until serial console opens
+  //while (!Serial) // Comment out if not running via USB, otherwise program won't run if serial doesn't open!
+  delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
   // Initialize & Format file system
   if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
@@ -269,8 +266,6 @@ void setup(void) {
   by Elochukwu Ifediora (fedy0)
   */
 
-
-
   //#define LED_BUILTIN 2   // Set the GPIO pin where you connected your test LED or comment this line out if your dev board has a built-in LED
   pinMode(LED_BUILTIN, OUTPUT);
   //Serial.begin(115200);
@@ -291,6 +286,7 @@ void setup(void) {
 }
 
 void loop() {
+  // Prints sensor data (Commented out for now)
   //data_print_test(dso32,MS5611,1);
 
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
@@ -323,7 +319,8 @@ void loop() {
   // Log sensor data every 20 seconds
   if (loggingActive && (currentTime - lastWriteTime >= writeInterval)) {
     lastWriteTime = currentTime;
-
+    
+    MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
     float temp = MS5611.getTemperature();
     float pressure = MS5611.getPressure();
     //edit this section in the future when we are ACTUALLY logging data
