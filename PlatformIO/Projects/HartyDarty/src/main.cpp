@@ -14,26 +14,6 @@
 // Formats file system if not already formatted
 #define FORMAT_LITTLEFS_IF_FAILED true
 
-// Set these to your desired credentials.
-const char *ssid = "XIAO_ESP32S3";
-const char *password = "password";
-
-WiFiServer server(80);
-
-//delays for file writing
-unsigned long startTime = 0;
-unsigned long lastWriteTime = 0;
-const unsigned long writeInterval = 20000; // 20 seconds
-const unsigned long runDuration = 120000;  // 2 minutes
-bool loggingActive = true;
-bool startTimeLogged = false;
-
-//check that all components are up and running
-Adafruit_LSM6DSO32 dso32;
-
-// Set I2C adress for barometer - Ignore any error here relating to "not a class name"
-MS5611 MS5611(0x77);
-
 // Define pins for continuity testing
 // Ig for ignition wires and cont for continuity wires
 // NOTE! Reflects ports on final flight computer, not breadboard computer!
@@ -43,6 +23,36 @@ MS5611 MS5611(0x77);
 #define cont2 3
 #define ig3 9
 #define cont3 8
+
+// Set these to your desired credentials.
+const char *ssid = "XIAO_ESP32S3";
+const char *password = "password";
+
+WiFiServer server(80);
+
+//file writing start
+unsigned long startTime = 0;
+unsigned long lastWriteTime = 0;
+const unsigned long writeInterval = 20000; // 20 seconds
+const unsigned long runDuration = 120000;  // 2 minutes
+bool flightStarted = false;
+bool loggingActive = true;
+bool startTimeLogged = false;
+
+//writing elements to record
+const float launchAccelThreshold = 2.5;    // g threshold for launch detection
+const float seaLevelPressure = 1013.25;  // mbar, standard sea level pressure
+
+bool stageDetected = false;
+bool apogeeDetected = false;
+
+
+
+//check that all components are up and running
+Adafruit_LSM6DSO32 dso32;
+
+// Set I2C adress for barometer - Ignore any error here relating to "not a class name"
+MS5611 MS5611(0x77);
 
 // Functions for using the LittleFS file system - Will be moved out of main later! 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
@@ -215,6 +225,10 @@ void testFileIO(fs::FS &fs, const char * path){
 }
 
 void setup(void) {
+  dso32.setAccelRange(LSM6DSO32_ACCEL_RANGE_32_G); //for 32Gs bc we are insane
+  float groundPressure = MS5611.getPressure();  // mbar
+
+
   startTime = millis();
 
   Serial.begin(115200);
@@ -286,6 +300,23 @@ void setup(void) {
 }
 
 void loop() {
+  sensors_event_t accel;
+  sensors_event_t gyro;
+  dso32.getEvent(&accel, &gyro, nullptr);
+
+  float zG = accel.acceleration.z / 9.80665;  // Convert m/s² to g in z direction
+  float xG = accel.acceleration.x / 9.80665; // x direciton
+  float yG = accel.acceleration.y / 9.80665; // y direction
+
+  float gyroX = gyro.gyro.x;
+  float gyroY = gyro.gyro.y;
+  float gyroZ = gyro.gyro.z;
+
+  if (!flightStarted && zG > launchAccelThreshold) {
+    flightStarted = true;
+    startTime = millis();
+    Serial.println("Flight detected! Logging started.");
+  }
   // Prints sensor data (Commented out for now)
   //data_print_test(dso32,MS5611,1);
 
@@ -298,17 +329,17 @@ void loop() {
   unsigned long currentTime = millis();
 
   // Stop logging after 2 minutes
-  if (loggingActive && (currentTime - startTime >= runDuration)) {
+  if (loggingActive && /** flightStarted */ (currentTime - startTime >= runDuration)) {
     loggingActive = false;
     Serial.println("Logging complete after 2 minutes.");
   }
 
   // Log start time once
-  if (loggingActive && !startTimeLogged) {
-    File file = LittleFS.open("/data.txt", "w");  // overwrite any previous content
+  //lots of comments for switching to flight detection later
+  if (loggingActive && !startTimeLogged /** && flightStarted */) {
+    File file = LittleFS.open("/data.txt", "w");  // overwrite any previous content, make sure W not R
     if (file) {
-      time_t now = time(nullptr);  // optional: if RTC or NTP is available
-      file.print("Logging started at millis: ");
+      file.print("Logging started at millis: "); //"Logging started at %.2f seconds since boot\n", startTime / 1000.0
       file.println(startTime);
       file.close();
       startTimeLogged = true;
@@ -316,8 +347,11 @@ void loop() {
     }
   }
 
+  
+
+
   // Log sensor data every 20 seconds
-  if (loggingActive && (currentTime - lastWriteTime >= writeInterval)) {
+  if (loggingActive && /** flightStarted */ (currentTime - lastWriteTime >= writeInterval)) {
     lastWriteTime = currentTime;
     
     MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
@@ -325,12 +359,41 @@ void loop() {
     float pressure = MS5611.getPressure();
     //edit this section in the future when we are ACTUALLY logging data
 
+    // Altitude relative to sea level
+    float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
 
-    //
+    // Altitude relative to launch site
+    float relativeAltitude = seaLevelAltitude - 226.2;
+
+    //might need to change later if time with mach
+    float previousLogX = xG;
+    float previousAltS = seaLevelAltitude;
+    float previousAltR = relativeAltitude;
+    int i = 0;
+    int j = 0;
+
+
+
     File file = LittleFS.open("/data.txt", "a");  // append mode
     if (file) {
-      file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);  // each entry on its own line with f
-      file.close();
+      file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);
+      file.printf("Accel (g): X=%.2f, Y=%.2f, Z=%.2f\n", xG, yG, zG);
+      file.printf("Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n\n", gyroX, gyroY, gyroZ);
+      file.printf("Altitude (ASL): %.2f m\n", seaLevelAltitude);
+      file.printf("Altitude (from Dayton): %.2f m\n", relativeAltitude); 
+      if (xG < previousLogX && i == 0){ //stage change detection
+        file.printf("Stage change detected at %.2f", previousLogX);
+        i = 1;
+      }
+      if (previousAltS > seaLevelAltitude && j == 0){ //apogee detection sea
+        file.printf("Apogee detected at %.2f", previousAltS);
+        j = 1;
+      } 
+      if (previousAltR > relativeAltitude && j == 0){ //apogee detection relative for keepsake
+        file.printf("Apogee detected at %.2f", previousAltR);
+        j = 1;
+      }
+
       Serial.println("Logged sensor data.");
     } else {
       Serial.println("Failed to open /data.txt");
