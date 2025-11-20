@@ -23,7 +23,7 @@ WiFiServer server(80);
 //delays for file writing
 unsigned long startTime = 0;
 unsigned long lastWriteTime = 0;
-const unsigned long writeInterval = 1000; // 20 seconds
+const unsigned long writeInterval = 1000; // 1 second
 const unsigned long runDuration = 120000;  // 2 minutes
 bool loggingActive = true;
 bool startTimeLogged = false;
@@ -33,6 +33,9 @@ Adafruit_LSM6DSO32 dso32;
 
 // Set I2C adress for barometer - Ignore any error here relating to "not a class name"
 MS5611 MS5611(0x77);
+sensors_event_t accel;
+sensors_event_t gyro;
+sensors_event_t temp;
 
 // Define pins for continuity testing
 // Ig for ignition wires and cont for continuity wires
@@ -286,10 +289,10 @@ void setup(void) {
 }
 
 void loop() {
+  dso32.getEvent(&accel, &gyro, &temp);
   // Prints sensor data (Commented out for now)
   //data_print_test(dso32,MS5611,1);
-  sensors_event_t accel;
-  sensors_event_t gyro;
+  
 
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
   int ig[3]={ig1,ig2,ig3};
