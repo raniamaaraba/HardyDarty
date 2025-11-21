@@ -323,6 +323,7 @@ void loop() {
       time_t now = time(nullptr);  // optional: if RTC or NTP is available
       file.print("Logging started at millis: ");
       file.println(startTime);
+      file.println("t+,temp (c),Pressure (mbar),ax (g),ay (g),az (g),wx (m/s),wy (m/s),wz (m/s),Sea Level Alt,Relative (Dayton) Alt");
       file.close();
       startTimeLogged = true;
       Serial.println("Start time logged.");
@@ -343,14 +344,41 @@ void loop() {
     float relativeAltitude = seaLevelAltitude - 226.2;
 
 
+    // Old version
+    // File file = LittleFS.open("/data.txt", "a");  // append mode
+    // if (file) {
+    //   // Print to file
+    //   file.printf("T+: %.2f ms\n",startTime-currentTime);
+    //   file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);
+    //   file.printf("Accel (g): X=%.2f, Y=%.2f, Z=%.2f\n", xG, yG, zG);
+    //   file.printf("Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n\n", gyroX, gyroY, gyroZ);
+    //   file.printf("Altitude (ASL): %.2f m\n", seaLevelAltitude);
+    //   file.printf("Altitude (from Dayton): %.2f m\n", relativeAltitude); 
 
-    File file = LittleFS.open("/data.txt", "a");  // append mode
-    if (file) {
-      file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);
-      file.printf("Accel (g): X=%.2f, Y=%.2f, Z=%.2f\n", xG, yG, zG);
-      file.printf("Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n\n", gyroX, gyroY, gyroZ);
-      file.printf("Altitude (ASL): %.2f m\n", seaLevelAltitude);
-      file.printf("Altitude (from Dayton): %.2f m\n", relativeAltitude); 
+    //   // Print to serial monitor upon logging completion 
+    //   Serial.println("Logging Completed");
+    // } else {
+    //   Serial.println("Failed to open /data.txt");
+    // }
+
+    // New version
+    File file = LittleFS.open("/data.txt","a"); // "a" is for append mode
+    if (file) { // Makes sure file open
+      // Computes current time 
+      unsigned long normalTime = currentTime - startTime; // Integer bc 
+
+      // Print to file
+      file.printf("%.0f,",normalTime); // Logs time
+      file.printf("%.2f,%.2f,",temp,pressure); // Logs temperature and pressure
+      file.printf("%.5f,%.5f,%.5f,",xG,yG,zG); // Logs acceleration
+      file.printf("%.5f,%.5f,%.5f,",gyroX,gyroY,gyroZ); // Logs gyro readings
+      file.printf("%.5f,%.5f \n",seaLevelAltitude,relativeAltitude); // Logs Altitude
+      file.close(); // Closes file
+
+      // Serial print upon logging completion
+      Serial.print("Logging Complete at T+: ");
+      Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
+      Serial.print("Seconds");
     } else {
       Serial.println("Failed to open /data.txt");
     }
