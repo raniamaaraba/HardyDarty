@@ -20,12 +20,28 @@ const char *password = "password";
 
 WiFiServer server(80);
 
+// Set data rate parameters 
+unsigned long data_rate = 100; // Data rate in Hz
+unsigned long iter = 0;
+// Create storage arrays, has underscores after name for temporary deconfliction w/ existing code
+float t_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float temp_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float pressure_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Ax_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Ay_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Az_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Wx_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Wy_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Wz_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float Alt_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+float RelativeAlt_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
 //delays for file writing
 unsigned long startTime = 0;
 unsigned long lastWriteTime = 0;
 const unsigned long writeInterval = 1000/100; // 100Hz
 // Time to touchdown minimum 160, probably do 200
-const unsigned long runDuration = 45*1000;  // 45 seconds
+const unsigned long runDuration = 30*1000;  // 30 Seconds
 bool loggingActive = true;
 bool startTimeLogged = false;
 
@@ -36,7 +52,7 @@ Adafruit_LSM6DSO32 dso32;
 MS5611 MS5611(0x77);
 sensors_event_t accel;
 sensors_event_t gyro;
-sensors_event_t temp;
+sensors_event_t temp2;
 
 // Define pins for continuity testing
 // Ig for ignition wires and cont for continuity wires
@@ -290,7 +306,6 @@ void setup(void) {
 }
 
 void loop() {
-  dso32.getEvent(&accel, &gyro, &temp);
   // Prints sensor data (Commented out for now)
   //data_print_test(dso32,MS5611,1);
   
@@ -311,6 +326,8 @@ void loop() {
 
   unsigned long currentTime = millis();
 
+  dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
+
   // Stop logging after 2 minutes
   if (loggingActive && (currentTime - startTime >= runDuration)) {
     loggingActive = false;
@@ -328,7 +345,7 @@ void loop() {
       time_t now = time(nullptr);  // optional: if RTC or NTP is available
       file.print("Logging started at millis: ");
       file.println(startTime);
-      file.println("t+,temp (c),Pressure (mbar),ax (m/s^2),ay (m/s^2),az (m/s^2),wx (deg/s),wy (deg/s),wz (deg/s),Sea Level Alt,Relative (Dayton) Alt");
+      file.println("t+ (ms),temp (c),Pressure (mbar),ax (m/s^2),ay (m/s^2),az (m/s^2),wx (deg/s),wy (deg/s),wz (deg/s),Sea Level Alt,Relative (Dayton) Alt");
       file.close();
       startTimeLogged = true;
       if(Serial){
@@ -338,62 +355,127 @@ void loop() {
   }
 
   // Log sensor data every 20 seconds
-  if (loggingActive && (currentTime - lastWriteTime >= writeInterval)) {
-    lastWriteTime = currentTime;
-    
-    MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
-    float temp = MS5611.getTemperature();
-    float pressure = MS5611.getPressure();
-    // Altitude relative to sea level
-    float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
+  // if (loggingActive && (currentTime - lastWriteTime >= writeInterval)) {
+  //   lastWriteTime = currentTime;
+  
+  //   MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
+  //   float temp = MS5611.getTemperature();
+  //   float pressure = MS5611.getPressure();
+  //   // Altitude relative to sea level
+  //   float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
 
-    // Altitude relative to launch site
-    float relativeAltitude = seaLevelAltitude - 226.2;
+  //   // Altitude relative to launch site
+  //   float relativeAltitude = seaLevelAltitude - 226.2;
 
 
-    // Old version
-    // File file = LittleFS.open("/data.txt", "a");  // append mode
-    // if (file) {
-    //   // Print to file
-    //   file.printf("T+: %.2f ms\n",startTime-currentTime);
-    //   file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);
-    //   file.printf("Accel (g): X=%.2f, Y=%.2f, Z=%.2f\n", xG, yG, zG);
-    //   file.printf("Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n\n", gyroX, gyroY, gyroZ);
-    //   file.printf("Altitude (ASL): %.2f m\n", seaLevelAltitude);
-    //   file.printf("Altitude (from Dayton): %.2f m\n", relativeAltitude); 
+  //   // Old version
+  //   // File file = LittleFS.open("/data.txt", "a");  // append mode
+  //   // if (file) {
+  //   //   // Print to file
+  //   //   file.printf("T+: %.2f ms\n",startTime-currentTime);
+  //   //   file.printf("Temp: %.2f C, Pressure: %.2f mbar\n", temp, pressure);
+  //   //   file.printf("Accel (g): X=%.2f, Y=%.2f, Z=%.2f\n", xG, yG, zG);
+  //   //   file.printf("Gyro (°/s): X=%.2f, Y=%.2f, Z=%.2f\n\n", gyroX, gyroY, gyroZ);
+  //   //   file.printf("Altitude (ASL): %.2f m\n", seaLevelAltitude);
+  //   //   file.printf("Altitude (from Dayton): %.2f m\n", relativeAltitude); 
 
-    //   // Print to serial monitor upon logging completion 
-    //   Serial.println("Logging Completed");
-    // } else {
-    //   Serial.println("Failed to open /data.txt");
-    // }
+  //   //   // Print to serial monitor upon logging completion 
+  //   //   Serial.println("Logging Completed");
+  //   // } else {
+  //   //   Serial.println("Failed to open /data.txt");
+  //   // }
 
-    // New version
-    File file = LittleFS.open("/data.txt","a"); // "a" is for append mode
-    if (file) { // Makes sure file open
-      // Computes current time 
-      float normalTime = currentTime - startTime; // Float for formatting, maybe fix later
+  //   // New version
+  //   File file = LittleFS.open("/data.txt","a"); // "a" is for append mode
+  //   if (file) { // Makes sure file open
+  //     // Computes current time 
+  //     float normalTime = currentTime - startTime; // Float for formatting, maybe fix later
 
-      // Print to file
-      file.printf("%.0f,",normalTime); // Logs time
-      file.printf("%.2f,%.2f,",temp,pressure); // Logs temperature and pressure
-      file.printf("%.5f,%.5f,%.5f,",xG,yG,zG); // Logs acceleration
-      file.printf("%.5f,%.5f,%.5f,",gyroX,gyroY,gyroZ); // Logs gyro readings
-      file.printf("%.5f,%.5f \n",seaLevelAltitude,relativeAltitude); // Logs Altitude
-      file.close(); // Closes file
+  //     // Print to file
+  //     file.printf("%.0f,",normalTime); // Logs time
+  //     file.printf("%.2f,%.2f,",temp,pressure); // Logs temperature and pressure
+  //     file.printf("%.5f,%.5f,%.5f,",xG,yG,zG); // Logs acceleration
+  //     file.printf("%.5f,%.5f,%.5f,",gyroX,gyroY,gyroZ); // Logs gyro readings
+  //     file.printf("%.5f,%.5f \n",seaLevelAltitude,relativeAltitude); // Logs Altitude
+  //     file.close(); // Closes file
 
-      // Serial print upon logging completion
-      if(Serial){
-        Serial.print("Logging Complete at T+: ");
-        Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
-        Serial.println(" seconds");
+  //     // Serial print upon logging completion
+  //     if(Serial){
+  //       Serial.print("Logging Complete at T+: ");
+  //       Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
+  //       Serial.println(" seconds");
+  //     }
+  //   } else {
+  //     if(Serial){
+  //       Serial.println("Failed to open /data.txt");
+  //     }
+  //   }
+  // }
+
+  // Even newer version!
+  if (loggingActive){
+      for (int i=0; i<20; i++) {
+        // Computes current time 
+        float currentTime = millis();
+        float normalTime = currentTime - startTime; // Float for formatting, maybe fix later
+
+        dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
+        MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
+        float temp = MS5611.getTemperature();
+        float pressure = MS5611.getPressure();
+        // Altitude relative to sea level
+        float seaLevelAltitude = 44330.0 * (1.0 - pow(pressure / 1013.25, 0.1903));
+
+        // Altitude relative to launch site
+        float relativeAltitude = seaLevelAltitude - 226.2;
+
+        float zG = accel.acceleration.z;
+        float xG = accel.acceleration.x;
+        float yG = accel.acceleration.y;
+
+        float gyroX = gyro.gyro.x;
+        float gyroY = gyro.gyro.y;
+        float gyroZ = gyro.gyro.z;
+
+        t_[i]=normalTime;
+        temp_[i]=temp;
+        pressure_[i]=pressure;
+        Ax_[i]=xG;
+        Ay_[i]=yG;
+        Az_[i]=zG;
+        Wx_[i]=gyroX;
+        Wy_[i]=gyroY;
+        Wz_[i]=gyroZ;
+        Alt_[i]=seaLevelAltitude;
+        RelativeAlt_[i]=relativeAltitude;
+
+        iter=1;
       }
-    } else {
-      if(Serial){
-        Serial.println("Failed to open /data.txt");
+
+      if (iter==1) {
+        File file = LittleFS.open("/data.txt","a");
+        if (file) {
+          for (int k=0; k<20; k++) {
+
+            file.printf("%.0f,",t_[k]); // Logs time
+            file.printf("%.2f,%.2f,",temp_[k],pressure_[k]); // Logs temperature and pressure
+            file.printf("%.5f,%.5f,%.5f,",Ax_[k],Ay_[k],Az_[k]); // Logs acceleration
+            file.printf("%.5f,%.5f,%.5f,",Wx_[k],Wy_[k],Wz_[k]); // Logs gyro readings
+            file.printf("%.5f,%.5f \n",Alt_[k],RelativeAlt_[k]); // Logs Altitude
+          }
+          file.close(); // close the file after the loop
+
+          if (Serial) {
+            float normalTime = currentTime - startTime;
+            Serial.print("Logging Complete at T+: ");
+            Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
+            Serial.println(" seconds");
+          }
+        }
+
+        iter = 0;
       }
     }
-  }
 
 
 

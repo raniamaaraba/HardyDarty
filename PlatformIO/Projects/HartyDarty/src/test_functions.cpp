@@ -285,5 +285,5 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
     }
     Serial.println();
 
-    BARO.setOversampling(OSR_HIGH);
+    BARO.setOversampling(OSR_STANDARD);
 }
