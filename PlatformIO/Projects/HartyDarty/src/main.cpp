@@ -38,12 +38,18 @@ float RelativeAlt_[20]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 //delays for file writing
 unsigned long startTime = 0;
+float launchTime = 0;
 unsigned long lastWriteTime = 0;
 const unsigned long writeInterval = 1000/100; // 100Hz
 // Time to touchdown minimum 160, probably do 200
 const unsigned long runDuration = 30*1000;  // 30 Seconds
 bool loggingActive = true;
+bool launch = false;
 bool startTimeLogged = false;
+
+// Launch detection constants
+float launch_acc = 1*9.80665; // Launch acceleration threshold (g), 5g is actually 
+float launch_buffer[25]; // Buffer that contains launch detection acceleration readings
 
 //check that all components are up and running
 Adafruit_LSM6DSO32 dso32;
@@ -328,8 +334,38 @@ void loop() {
 
   dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
 
+  // Launch detection ----------------------------------------
+  if (!launch){
+    // Read 100 samples of acceleration
+    float delta = 0;
+    for (int z=0; z<25; z++){
+      dso32.getEvent(&accel, &gyro, &temp2);
+
+      launch_buffer[z] = accel.acceleration.x;
+
+      delta += launch_buffer[z];
+      if(Serial){
+        Serial.println(accel.acceleration.x);
+      }
+    }
+    float average = delta/25;
+
+    if(Serial) {
+      Serial.print("Average: ");
+      Serial.print(average);
+      Serial.println(" m/s");
+    }
+
+    if (average>=launch_acc) {
+      launch = true;
+      launchTime = millis();
+      delay(100);
+    }
+  }
+
   // Stop logging after 2 minutes
-  if (loggingActive && (currentTime - startTime >= runDuration)) {
+  currentTime = millis();
+  if (loggingActive && (currentTime - launchTime >= runDuration) && launch) {
     loggingActive = false;
     if(Serial){
       Serial.print("Logging complete after ");
@@ -339,7 +375,7 @@ void loop() {
   }
 
   // Log start time once
-  if (loggingActive && !startTimeLogged) {
+  if (loggingActive && !startTimeLogged && launch) {
     File file = LittleFS.open("/data.txt", "w");  // overwrite any previous content
     if (file) {
       time_t now = time(nullptr);  // optional: if RTC or NTP is available
@@ -413,11 +449,11 @@ void loop() {
   // }
 
   // Even newer version!
-  if (loggingActive){
+  if (loggingActive && launch){
       for (int i=0; i<20; i++) {
         // Computes current time 
         float currentTime = millis();
-        float normalTime = currentTime - startTime; // Float for formatting, maybe fix later
+        float normalTime = currentTime - launchTime; // Float for formatting, maybe fix later
 
         dso32.getEvent(&accel, &gyro, &temp2); // Gets data from IMU
         MS5611.read(); // Must be called each time before getting pressure or temp using below functions!
@@ -467,8 +503,11 @@ void loop() {
 
           if (Serial) {
             float normalTime = currentTime - startTime;
-            Serial.print("Logging Complete at T+: ");
+            Serial.print("Logging Complete at : ");
             Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
+            Serial.print(" seconds (since start)");
+            Serial.print(" & T+: ");
+            Serial.print((currentTime-launchTime)/1000);
             Serial.println(" seconds");
           }
         }
