@@ -23,8 +23,9 @@ WiFiServer server(80);
 //delays for file writing
 unsigned long startTime = 0;
 unsigned long lastWriteTime = 0;
-const unsigned long writeInterval = 1000; // 1 second
-const unsigned long runDuration = 120000;  // 2 minutes
+const unsigned long writeInterval = 1000/100; // 100Hz
+// Time to touchdown minimum 160, probably do 200
+const unsigned long runDuration = 45*1000;  // 45 seconds
 bool loggingActive = true;
 bool startTimeLogged = false;
 
@@ -218,18 +219,15 @@ void testFileIO(fs::FS &fs, const char * path){
 }
 
 void setup(void) {
-  startTime = millis();
-
   Serial.begin(115200);
   //while (!Serial) // Comment out if not running via USB, otherwise program won't run if serial doesn't open!
-  delay(10); // will pause Zero, Leonardo, etc until serial console opens
+  delay(100); // will pause Zero, Leonardo, etc until serial console opens
 
   // Initialize & Format file system
   if(!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)){
     Serial.println("LittleFS Mount Failed");
     return;
   }
-
   // All sensor initializations offloaded to 
   sensor_init(dso32,MS5611);
 
@@ -286,6 +284,9 @@ void setup(void) {
 
   // Create file 
   writeFile(LittleFS,"/data.txt","");
+
+  // Gets start time at the end of the startup cycle 
+  startTime = millis();
 }
 
 void loop() {
@@ -297,11 +298,11 @@ void loop() {
   // Turn the GPIO ports for ignition and continuity into integer arrays for input to function
   int ig[3]={ig1,ig2,ig3};
   int cont[3]={cont1,cont2,cont3};
-  continuity_test(0,ig,cont);
+  // continuity_test(0,ig,cont); // Commented out for ease of testing
 
-  float zG = accel.acceleration.z / 9.80665;  // Convert m/s² to g in z direction
-  float xG = accel.acceleration.x / 9.80665; // x direciton
-  float yG = accel.acceleration.y / 9.80665; // y direction
+  float zG = accel.acceleration.z;
+  float xG = accel.acceleration.x;
+  float yG = accel.acceleration.y;
 
   float gyroX = gyro.gyro.x;
   float gyroY = gyro.gyro.y;
@@ -313,7 +314,11 @@ void loop() {
   // Stop logging after 2 minutes
   if (loggingActive && (currentTime - startTime >= runDuration)) {
     loggingActive = false;
-    Serial.println("Logging complete after 2 minutes.");
+    if(Serial){
+      Serial.print("Logging complete after ");
+      Serial.print((currentTime-startTime)/1000.0);
+      Serial.println(" seconds");
+    }
   }
 
   // Log start time once
@@ -323,10 +328,12 @@ void loop() {
       time_t now = time(nullptr);  // optional: if RTC or NTP is available
       file.print("Logging started at millis: ");
       file.println(startTime);
-      file.println("t+,temp (c),Pressure (mbar),ax (g),ay (g),az (g),wx (m/s),wy (m/s),wz (m/s),Sea Level Alt,Relative (Dayton) Alt");
+      file.println("t+,temp (c),Pressure (mbar),ax (m/s^2),ay (m/s^2),az (m/s^2),wx (deg/s),wy (deg/s),wz (deg/s),Sea Level Alt,Relative (Dayton) Alt");
       file.close();
       startTimeLogged = true;
-      Serial.println("Start time logged.");
+      if(Serial){
+        Serial.println("Start time logged.");
+      }
     }
   }
 
@@ -365,7 +372,7 @@ void loop() {
     File file = LittleFS.open("/data.txt","a"); // "a" is for append mode
     if (file) { // Makes sure file open
       // Computes current time 
-      unsigned long normalTime = currentTime - startTime; // Integer bc 
+      float normalTime = currentTime - startTime; // Float for formatting, maybe fix later
 
       // Print to file
       file.printf("%.0f,",normalTime); // Logs time
@@ -376,11 +383,15 @@ void loop() {
       file.close(); // Closes file
 
       // Serial print upon logging completion
-      Serial.print("Logging Complete at T+: ");
-      Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
-      Serial.print("Seconds");
+      if(Serial){
+        Serial.print("Logging Complete at T+: ");
+        Serial.print((currentTime-startTime)/1000.0); // Converts current time from ms to seconds
+        Serial.println(" seconds");
+      }
     } else {
-      Serial.println("Failed to open /data.txt");
+      if(Serial){
+        Serial.println("Failed to open /data.txt");
+      }
     }
   }
 
@@ -389,12 +400,16 @@ void loop() {
 
   WiFiClient client = server.available();
   if (client) {
-    Serial.println("New Client.");
+    if(Serial){
+      Serial.println("New Client.");
+    }
     String currentLine = "";
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-        Serial.write(c);
+        if(Serial){
+          Serial.write(c);
+        }
         if (c == '\n') {
           //file download for html
           if (currentLine.startsWith("GET /data.txt")) {
@@ -440,15 +455,21 @@ void loop() {
         //testing with LEDs
         if (currentLine.endsWith("GET /H")) {
           digitalWrite(LED_BUILTIN, LOW);
-          Serial.println("LED turned ON");
+          if(Serial){
+            Serial.println("LED turned ON");
+          }
         }
         if (currentLine.endsWith("GET /L")) {
           digitalWrite(LED_BUILTIN, HIGH);
-          Serial.println("LED turned OFF");
+          if(Serial){
+            Serial.println("LED turned OFF");
+          }
         }
       }
     }
     client.stop();
-    Serial.println("Client Disconnected.");
+    if(Serial){
+      Serial.println("Client Disconnected.");
+    }
   }
 }

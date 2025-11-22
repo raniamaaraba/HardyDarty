@@ -103,46 +103,47 @@ void continuity_test(int mode, int ig[3], int cont[3]){
     float Vout3 = ADC3* (3.3/4095.0);
     float Vigniter3 = Vout3*2;
 
-    if (mode==0){
-        if (Vigniter1 >= 3.2) {
-            Serial.print("Continuity 1 Good: ");
-        }
-        if (Vigniter1 >= 3.6) {
-            Serial.print("Good Voltage 1: ");
-        } else {
-            Serial.print("Low Battery 1: ");
-        }
-        Serial.print(Vigniter1); Serial.print(" ");
+    if(Serial){
+        if (mode==0){
+            if (Vigniter1 >= 3.2) {
+                Serial.print("Continuity 1 Good: ");
+            }
+            if (Vigniter1 >= 3.6) {
+                Serial.print("Good Voltage 1: ");
+            } else {
+                Serial.print("Low Battery 1: ");
+            }
+            Serial.print(Vigniter1); Serial.print(" ");
 
-        if (Vigniter2 >= 3.2) {
-            Serial.print("Continuity 2 Good: ");
-        }
-        if (Vigniter2 >= 3.6) {
-            Serial.print("Good Voltage 2: ");
-        } else {
-            Serial.print("Low Battery 2: ");
-        }
-        Serial.print(Vigniter2); Serial.print(" ");
+            if (Vigniter2 >= 3.2) {
+                Serial.print("Continuity 2 Good: ");
+            }
+            if (Vigniter2 >= 3.6) {
+                Serial.print("Good Voltage 2: ");
+            } else {
+                Serial.print("Low Battery 2: ");
+            }
+            Serial.print(Vigniter2); Serial.print(" ");
 
-        if (Vigniter3 >= 3.2) {
-            Serial.print("Continuity 3 Good: ");
-        }
-        if (Vigniter3 >= 3.6) {
-            Serial.print("Good Voltage 3: ");
-        } else {
-            Serial.print("Low Battery 3: ");
-        }
-        Serial.println(Vigniter3);
-        delay(1000);
-    } else 
-    // Sequential Blink Mode: Turns each LED on and off in sequence
-    // DO NOT USE WITH ANY LIVE IGNITERS, WILL IGNITE AS SOON AS PROGRAM IS FLASHED!
-    {
-        for (int i=0; i<3; i++) {
+            if (Vigniter3 >= 3.2) {
+                Serial.print("Continuity 3 Good: ");
+            }
+            if (Vigniter3 >= 3.6) {
+                Serial.print("Good Voltage 3: ");
+            } else {
+                Serial.print("Low Battery 3: ");
+            }
+            Serial.println(Vigniter3);
             delay(1000);
-            digitalWrite(ig[i],HIGH);
-            delay(1000);
-            digitalWrite(ig[i],LOW);
+        } else{
+        // Sequential Blink Mode: Turns each LED on and off in sequence
+        // DO NOT USE WITH ANY LIVE IGNITERS, WILL IGNITE AS SOON AS PROGRAM IS FLASHED!
+            for (int i=0; i<3; i++) {
+                delay(1000);
+                digitalWrite(ig[i],HIGH);
+                delay(1000);
+                digitalWrite(ig[i],LOW);
+            }
         }
     }
 }
@@ -159,7 +160,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
 
     Serial.println("LSM6DSO32 Found!");
 
-    IMU.setAccelRange(LSM6DSO32_ACCEL_RANGE_8_G);
+    IMU.setAccelRange(LSM6DSO32_ACCEL_RANGE_16_G);
     Serial.print("Accelerometer range set to: ");
     switch (IMU.getAccelRange()) {
     case LSM6DSO32_ACCEL_RANGE_4_G:
@@ -198,7 +199,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
         break; // unsupported range for the DSO32
     }
 
-    // dso32.setAccelDataRate(LSM6DS_RATE_12_5_HZ);
+    IMU.setAccelDataRate(LSM6DS_RATE_208_HZ);
     Serial.print("Accelerometer data rate set to: ");
     switch (IMU.getAccelDataRate()) {
     case LSM6DS_RATE_SHUTDOWN:
@@ -236,7 +237,7 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
         break;
     }
 
-    // dso32.setGyroDataRate(LSM6DS_RATE_12_5_HZ);
+    IMU.setGyroDataRate(LSM6DS_RATE_208_HZ); 
     Serial.print("Gyro data rate set to: ");
     switch (IMU.getGyroDataRate()) {
     case LSM6DS_RATE_SHUTDOWN:
@@ -284,5 +285,5 @@ void sensor_init(Adafruit_LSM6DSO32& IMU, MS5611& BARO){
     }
     Serial.println();
 
-    BARO.setOversampling(OSR_ULTRA_HIGH);
+    BARO.setOversampling(OSR_HIGH);
 }
