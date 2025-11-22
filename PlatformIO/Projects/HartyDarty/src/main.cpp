@@ -42,7 +42,7 @@ float launchTime = 0;
 unsigned long lastWriteTime = 0;
 const unsigned long writeInterval = 1000/100; // 100Hz
 // Time to touchdown minimum 160, probably do 200
-const unsigned long runDuration = 30*1000;  // 30 Seconds
+const unsigned long runDuration = 180*1000;  // 180 Seconds
 bool loggingActive = true;
 bool launch = false;
 bool startTimeLogged = false;
@@ -359,7 +359,6 @@ void loop() {
     if (average>=launch_acc) {
       launch = true;
       launchTime = millis();
-      delay(100);
     }
   }
 
@@ -515,8 +514,6 @@ void loop() {
         iter = 0;
       }
     }
-
-
 
 
   WiFiClient client = server.available();
