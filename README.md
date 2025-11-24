@@ -37,6 +37,8 @@ Courtesy of Hayden Mays, this was the wiring developed for Harty Darty's custom 
 
 # CAD Development
 <img width="282" height="931" alt="jonah_uler_3dmodeling" src="https://github.com/user-attachments/assets/4b1ed595-2bf4-45d7-bfd8-822befa1878d" />
+<img width="365" height="878" alt="ebay2" src="https://github.com/user-attachments/assets/35f4d52b-6c3a-4826-9055-75c87f41c7c7" />
+
 Courtesy of Jonah Uhler in Siemanns' NX software. The electronics bay fit like a glove around the desired components and allowed for space for wiring. 
 
 ### Packages
