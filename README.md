@@ -29,7 +29,6 @@ Create a fully functional avionics bay within scope, with primary features inclu
 | Online Transferable logging information | With our ESP, we could host a Wi-Fi connection and connect to the local host to download the recorded data after flight|
 
 
-<img width="468" height="637" alt="image" src="https://github.com/user-attachments/assets/cfbb1845-fe44-4fd5-bb5f-46ae7c1f0b4a" />
 Primary Code Development was [Loring Teuteuberg](https://www.linkedin.com/in/loring-teuteberg/),[Rania Maaraba](https://www.linkedin.com/in/rania-maaraba-403987290/), and [Jesse Dominguez](https://www.linkedin.com/in/jdz29/). CAD development was handled by Jonah Ulcer and Jesse Dominguez at Design Fusion, Cincinnati Ohio. Wiring development and non-custom avionics utilising the Blue Raven by Featherweight Altimiters, created by Hayden Mays. Final Code pushed in _'development'_ branch. 
 
 # Initial Wiring
