@@ -37,7 +37,7 @@ Courtesy of Hayden Mays, this was the wiring developed for Harty Darty's custom 
 
 # CAD Development
 <img width="282" height="931" alt="jonah_uler_3dmodeling" src="https://github.com/user-attachments/assets/4b1ed595-2bf4-45d7-bfd8-822befa1878d" />
-Courtesy of Jonah Ulcer in TinkerCAD as well as Siemanns' NX software. The electronics bay fit like a glove around the desired components and allowed for space for wiring. 
+Courtesy of Jonah Uhler in Siemanns' NX software. The electronics bay fit like a glove around the desired components and allowed for space for wiring. 
 
 ### Packages
 Developed in C++ using PlatformIO in VSC with Adafruit LSM6DS, barometer MS5611 SPI on a Seeed ESP32S3.
